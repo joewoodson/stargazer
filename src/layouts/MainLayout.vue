@@ -8,12 +8,12 @@
           IRON JOURNAL <span class="title-pipe">|</span> STARFORGED
         </q-toolbar-title>
 
-        <auth v-if='!session' />
-        <q-btn v-if='session' dense flat icon="logout" @click="handleLogout">
-          <q-tooltip>Logout</q-tooltip>
+        <auth :session='session' />
+        <q-btn dense flat icon="cloud_upload" @click="toggleRightDrawer" :disable="!session">
+          <q-tooltip>Save state to DB{{ !session ? '- log in to enable' : '' }}</q-tooltip>
         </q-btn>
-        <q-btn dense flat icon="dns" @click="toggleRightDrawer" :disable="!session">
-          <q-tooltip>Save state to DB{{ !session ? '. Sign in to enable' : '' }}</q-tooltip>
+        <q-btn dense flat icon="cloud_download" @click="toggleRightDrawer" :disable="!session">
+          <q-tooltip>Load state from DB{{ !session ? '- log in to enable' : '' }}</q-tooltip>
         </q-btn>
         <q-btn v-if="config.data.saving" icon="save" flat dense disable />
         <q-btn icon="mdi-dice-6" flat dense @click="showRoller = !showRoller">
@@ -457,17 +457,6 @@ export default defineComponent({
       }
     };
 
-    const handleLogout = async () => {
-      try {
-        const { error } = await supabase.auth.signOut()
-        if (error) throw error
-      } catch (error) {
-        if (error instanceof Error) {
-          alert(error.message)
-        }
-      }
-    }
-
     onMounted(async () => {
       await supabase.auth.getSession().then(({ data }) => {
         session.value = data.session;
@@ -520,8 +509,7 @@ export default defineComponent({
       crt,
       scrollTo,
 
-      session,
-      handleLogout
+      session
     };
   },
 });
