@@ -53,7 +53,8 @@ module.exports = configure(function (ctx) {
     build: {
       env: {
         VUE_APP_SUPABASE_URL: process.env.VUE_APP_SUPABASE_URL,
-        VUE_APP_SUPABASE_ANON_KEY: process.env.VUE_APP_SUPABASE_ANON_KEY
+        VUE_APP_SUPABASE_ANON_KEY: process.env.VUE_APP_SUPABASE_ANON_KEY,
+        VUE_APP_SUPABASE_AUTH_REDIRECT_URL: process.env.VUE_APP_SUPABASE_AUTH_REDIRECT_URL
       },
       vueRouterMode: 'history', // available values: 'hash', 'history'
 
