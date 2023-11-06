@@ -22,7 +22,6 @@ import { useOracles } from './store/oracles';
 
 import { debounce, useQuasar } from 'quasar';
 import { sleep } from './lib/util';
-import { supabase } from 'app/supabase';
 
 export default defineComponent({
   name: 'App',
@@ -35,7 +34,6 @@ export default defineComponent({
 
     const loaded = ref(false);
     const msg = ref(<string[]>['']);
-    const session = ref();
 
     const writeLine = async (text: string) => {
       msg.value.push('');
@@ -74,17 +72,6 @@ export default defineComponent({
 
     onMounted(async () => {
       await Promise.all([initialiseData(), renderIntro()]);
-
-      await supabase.auth.getSession().then(({ data }) => {
-        console.log('initial session: ', data.session)
-        session.value = data.session;
-      })
-
-      supabase.auth.onAuthStateChange((_, _session) => {
-        console.log('auth state changed session: ', _session)
-        session.value = _session;
-      })
-
       loaded.value = true;
     });
 
@@ -115,8 +102,6 @@ export default defineComponent({
       }, 1000),
       { deep: true }
     );
-
-    console.log(session);
 
     return {
       skipIntro,

@@ -8,6 +8,13 @@
           IRON JOURNAL <span class="title-pipe">|</span> STARFORGED
         </q-toolbar-title>
 
+        <auth v-if='!session' />
+        <q-btn v-if='session' dense flat icon="logout" @click="handleLogout">
+          <q-tooltip>Logout</q-tooltip>
+        </q-btn>
+        <q-btn dense flat icon="dns" @click="toggleRightDrawer" :disable="!session">
+          <q-tooltip>Save state to DB{{ !session ? '. Sign in to enable' : '' }}</q-tooltip>
+        </q-btn>
         <q-btn v-if="config.data.saving" icon="save" flat dense disable />
         <q-btn icon="mdi-dice-6" flat dense @click="showRoller = !showRoller">
           <q-tooltip>Toggle Dice Roller</q-tooltip>
@@ -366,7 +373,7 @@
 </template>
 
 <script lang="ts">
-import { ref, defineComponent, computed } from 'vue';
+import { ref, defineComponent, computed, onMounted } from 'vue';
 
 import { useCampaign } from 'src/store/campaign';
 import { useConfig } from 'src/store/config';
@@ -378,9 +385,11 @@ import Moves from 'src/components/Moves/Moves.vue';
 import Roller from 'src/components/Widgets/Roller.vue';
 import Journal from 'src/components/Journal/Journal.vue';
 import { useOracles } from 'src/store/oracles';
+import Auth from 'components/Auth/Auth.vue';
+import { supabase } from 'app/supabase';
 
 export default defineComponent({
-  components: { Oracles, Moves, Roller, Journal },
+  components: { Auth, Oracles, Moves, Roller, Journal },
   setup() {
     const leftDrawerOpen = ref(false);
     const rightDrawerOpen = ref(false);
@@ -420,6 +429,7 @@ export default defineComponent({
       customOracles.loadData(f);
       showOracleLoad.value = false;
     };
+    const session = ref();
 
     const width = computed((): number => {
       return !$q.platform.is.ipad && ($q.screen.lt.sm || $q.platform.is.mobile)
@@ -446,6 +456,28 @@ export default defineComponent({
         setVerticalScrollPosition(target, offset, duration);
       }
     };
+
+    const handleLogout = async () => {
+      try {
+        const { error } = await supabase.auth.signOut()
+        if (error) throw error
+      } catch (error) {
+        if (error instanceof Error) {
+          alert(error.message)
+        }
+      }
+    }
+
+    onMounted(async () => {
+      await supabase.auth.getSession().then(({ data }) => {
+        session.value = data.session;
+      })
+
+      supabase.auth.onAuthStateChange((_, _session) => {
+        session.value = _session;
+      })
+
+    });
 
     return {
       leftDrawerOpen,
@@ -487,6 +519,9 @@ export default defineComponent({
       btnSize,
       crt,
       scrollTo,
+
+      session,
+      handleLogout
     };
   },
 });
