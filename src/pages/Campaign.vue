@@ -1,6 +1,7 @@
 <template>
   <q-page padding>
     <!-- content -->
+    <auth />
     <i-input class="q-mb-md" label="Campaign Name" v-model="campaign.data.name" />
 
     <q-expansion-item default-opened>
@@ -49,10 +50,11 @@ import { NewFaction } from 'src/lib/campaign';
 import Truth from 'src/components/Truth.vue';
 import IInput from 'src/components/Widgets/IInput.vue';
 import Faction from 'src/components/Faction.vue';
+import Auth from 'components/Auth/Auth.vue';
 
 export default defineComponent({
   name: 'Truths',
-  components: { Truth, IInput, Faction },
+  components: { Auth, Truth, IInput, Faction },
   setup() {
     const campaign = useCampaign();
 
