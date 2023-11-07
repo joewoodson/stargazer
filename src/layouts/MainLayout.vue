@@ -9,10 +9,10 @@
         </q-toolbar-title>
 
         <auth :session='session' />
-        <q-btn dense flat icon="cloud_upload" @click="toggleRightDrawer" :disable="!session">
+        <q-btn dense flat icon="cloud_upload" @click="persistStateToDB" :disable="!session">
           <q-tooltip>Save state to DB{{ !session ? '- log in to enable' : '' }}</q-tooltip>
         </q-btn>
-        <q-btn dense flat icon="cloud_download" @click="toggleRightDrawer" :disable="!session">
+        <q-btn dense flat icon="cloud_download" @click="loadStateFromDB" :disable="!session">
           <q-tooltip>Load state from DB{{ !session ? '- log in to enable' : '' }}</q-tooltip>
         </q-btn>
         <q-btn v-if="config.data.saving" icon="save" flat dense disable />
@@ -387,6 +387,8 @@ import Journal from 'src/components/Journal/Journal.vue';
 import { useOracles } from 'src/store/oracles';
 import Auth from 'components/Auth/Auth.vue';
 import { supabase } from 'app/supabase';
+import { db } from 'src/lib/db';
+import { now } from 'src/lib/util';
 
 export default defineComponent({
   components: { Auth, Oracles, Moves, Roller, Journal },
@@ -457,6 +459,51 @@ export default defineComponent({
       }
     };
 
+    const persistStateToDB = async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const { user } = session.value;
+      const data = JSON.stringify(await db.campaign.toArray());
+      // `Starforged-campaign-${now()}.json`
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/restrict-template-expressions
+      const { error: uploadError } = await supabase.storage.from('game-states').upload(`${user.id}/starforged-campaign-${now()}.json`, data);
+
+      if (uploadError) throw uploadError;
+    }
+
+    const loadStateFromDB = async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const { user } = session.value;
+
+      const { data: gameStateFiles, error } = await supabase
+        .storage
+        .from('game-states')
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
+        .list(user.id, {
+          limit: 1,
+          search: 'starforged',
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' },
+        });
+
+      const fileName = gameStateFiles?.[0]?.name;
+
+      if (!fileName) return console.error('game state file not found');
+
+      const { data: gameStateBlob } = await supabase
+        .storage
+        .from('game-states')
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/restrict-template-expressions
+        .download(`${user.id}/${fileName}`);
+
+      if (!gameStateBlob) return console.error('game state file could not be downloaded');
+
+      const gameStateFile = new File([gameStateBlob], fileName);
+
+      campaign.loadData(gameStateFile);
+
+      if (error) throw error;
+    }
+
     onMounted(async () => {
       await supabase.auth.getSession().then(({ data }) => {
         session.value = data.session;
@@ -509,7 +556,9 @@ export default defineComponent({
       crt,
       scrollTo,
 
-      session
+      session,
+      persistStateToDB,
+      loadStateFromDB
     };
   },
 });
